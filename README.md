@@ -1,2 +1,2 @@
-# PotSeg
-The official code of PotSeg
+# RGFSeg
+The official code of RGFSeg
