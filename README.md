@@ -34,24 +34,25 @@ The accompanied video can be found at:
 </div>
 
 # Introduction
-CEKD is a knowledge distillation framework, which includes a teacher netwrok CENet and a student network EKNet. CENet is a multi-modal fusion network for semantic segmentation of urban scenes. EKNet is a thermal-only network for semantic segmentation of urban scenes.
+InconSeg is a network for the segmentation of positive obstacles and negative obstacles which can address the inconsistent information between two modalities with Residual-Guided Fusion modules
 # Dataset
-The original dataset can be downloaded from the MFNet project [page](https://www.mi.t.u-tokyo.ac.jp/static/projects/mil_multispectral/). You can use the [ELG](https://github.com/Lavender105/DFF/tree/master/lib/matlab) module to generate the edge map for training. You can also download our processed data from [here](https://labsun-me.polyu.edu.hk/zfeng/CEKD/).
+The NPO dataset can be downloaded from here [page](https://labsun-me.polyu.edu.hk/zfeng/InconSeg/). You can also download the dataset from Baidu Netdisk.
+
 # Pretrained weights
-The pretrained weight of CEKD can be downloaded from [here](https://labsun-me.polyu.edu.hk/zfeng/CEKD/).
+The pretrained weight of InconSeg can be downloaded from [here](https://labsun-me.polyu.edu.hk/zfeng/InconSeg/).
 # Usage
 * Clone this repo
 ```
-$ git clone https://github.com/lab-sun/CEKD.git
+$ git clone https://github.com/lab-sun/InconSeg.git
 ```
 * Build docker image
 ```
-$ cd ~/CEKD
-$ docker build -t docker_image_cekd .
+$ cd ~/InconSeg
+$ docker build -t docker_image_inconseg .
 ```
 * Download the dataset
 ```
-$ (You should be in the CEKD folder)
+$ (You should be in the InconSeg folder)
 $ mkdir ./dataset
 $ cd ./dataset
 $ (download our preprocessed dataset.zip in this folder)
@@ -59,12 +60,12 @@ $ unzip -d . dataset.zip
 ```
 * To reproduce our results, you need to download our pretrained weights.
 ```
-$ (You should be in the CEKD folder)
+$ (You should be in the InconSeg folder)
 $ mkdir ./weights_backup
 $ cd ./weights_backup
 $ (download our preprocessed weights.zip in this folder)
 $ unzip -d . weights.zip
-$ docker run -it --shm-size 8G -p 1234:6006 --name docker_container_cekd --gpus all -v ~/CEKD:/workspace docker_image_cekd
+$ docker run -it --shm-size 8G -p 1234:6006 --name docker_container_inconseg --gpus all -v ~/InconSeg:/workspace docker_image_inconseg
 $ (currently, you should be in the docker)
 $ cd /workspace
 $ (To reproduce the results of thermal student network EKNet)
