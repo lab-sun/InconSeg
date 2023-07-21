@@ -36,7 +36,7 @@ The accompanied video can be found at:
 # Introduction
 InconSeg is a network for the segmentation of positive obstacles and negative obstacles which can address the inconsistent information between two modalities with Residual-Guided Fusion modules
 # Dataset
-The NPO dataset can be downloaded from here [page](https://labsun-me.polyu.edu.hk/zfeng/InconSeg/). You can also download the dataset from [Baidu Netdisk](https://pan.baidu.com/s/1oxUb-0vdiZzTPu4waci39g), the password is cekd
+The [NPO dataset](https://github.com/lab-sun/InconSeg/blob/main/docs/dataset.md) can be downloaded from here [page](https://labsun-me.polyu.edu.hk/zfeng/InconSeg/). You can also download the dataset from [Baidu Netdisk](https://pan.baidu.com/s/1oxUb-0vdiZzTPu4waci39g), the password is cekd
 
 
 # Pretrained weights
