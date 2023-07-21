@@ -23,14 +23,14 @@ The official pytorch implementation of **InconSeg: Residual-Guided Fusion With I
 
 We test our code in Python 3.7, CUDA 11.1, cuDNN 8, and PyTorch 1.7.1. We provide `Dockerfile` to build the docker image we used. You can modify the `Dockerfile` as you want.  
 <div align=center>
-<img src="docs/overall.jpg" width="900px"/>
+<img src="docs/overall.png" width="900px"/>
 </div>
 
 # Demo
 
 The accompanied video can be found at: 
 <div align=center>
-<a href="https://www.youtube.com/watch?v=dd3zEopVEhA"><img src="docs/results.jpg" width="70%" height="70%" />
+<a href="https://www.youtube.com/watch?v=yoW52JeTDR8&t=7s"><img src="docs/qualitativeresultsgray5.png" width="70%" height="70%" />
 </div>
 
 # Introduction
