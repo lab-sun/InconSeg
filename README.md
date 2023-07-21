@@ -68,22 +68,22 @@ $ unzip -d . weights.zip
 $ docker run -it --shm-size 8G -p 1234:6006 --name docker_container_inconseg --gpus all -v ~/InconSeg:/workspace docker_image_inconseg
 $ (currently, you should be in the docker)
 $ cd /workspace
-$ (To reproduce the results of thermal student network EKNet)
-$ python3 run_demo_student.py   
-$ (To reproduce the results of RGB-thermal teacher network CENet)
-$ python3 run_demo_teacher.py   
+$ (To reproduce the results of RGB & Depth)
+$ python3 run_demo_RGB_Depth.py   
+$ (To reproduce the results of RGB & Disparity)
+$ python3 run_demo_RGB_Disparity.py   
 ```
 The results will be saved in the `./runs` folder.
-* To train CEKD (teacher network CENet and student network EKNet)
+* To train InconSeg 
 ```
-$ (You should be in the CEKD folder)
-$ docker run -it --shm-size 8G -p 1234:6006 --name docker_container_cekd --gpus all -v ~/CEKD:/workspace docker_image_cekd
+$ (You should be in the InconSeg folder)
+$ docker run -it --shm-size 8G -p 1234:6006 --name docker_container_inconseg --gpus all -v ~/InconSeg:/workspace docker_image_inconseg
 $ (currently, you should be in the docker)
 $ cd /workspace
-$ (To train our RGB-thermal teacher network CENet)
-$ python3 trainTeacher.py
-$ (To train our thermal student network EKNet)
-$ python3 trainStudent.py
+$ (To train RGB & Depth)
+$ python3 trainInconSeg_with_RGB_Depth.py
+$ (To train RGB & Disparity)
+$ python3 trainInconSeg_with_RGB_Disparity.py
 ```
 * To see the training process
 ```
@@ -97,21 +97,22 @@ The results will be saved in the `./runs` folder.
 Note: Please change the smoothing factor in the Tensorboard webpage to `0.999`, otherwise, you may not find the patterns from the noisy plots. If you have the error `docker: Error response from daemon: could not select device driver`, please first install [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) on your computer!
 
 # Citation
-If you use CEKD in your academic work, please cite:
+If you use InconSeg in your academic work, please cite:
 ```
-@ARTICLE{feng2023cekd,
-  author={Zhen Feng and Yanning Guo and Yuxiang Sun},
+@ARTICLE{feng2023inconseg,
+  author={Feng, Zhen and Guo, Yanning and Navarro-Alarcon, David and Lyu, Yueyong and Sun, Yuxiang},
   journal={IEEE Robotics and Automation Letters}, 
-  title={CEKD: Cross-Modal Edge-Privileged Knowledge Distillation for Semantic Scene Understanding Using Only Thermal Images}, 
+  title={InconSeg: Residual-Guided Fusion With Inconsistent Multi-Modal Data for Negative and Positive Road Obstacles Segmentation}, 
   year={2023},
   volume={8},
-  number={4},
-  pages={2205-2212},
-  doi={10.1109/LRA.2023.3247175}}
+  number={8},
+  pages={4871-4878},
+  doi={10.1109/LRA.2023.3272517}}
 ```
 
+
 # Acknowledgement
-Some of the codes are borrowed from [RTFNet](https://github.com/yuxiangsun/RTFNet), [PiDiNet](https://github.com/aja32/Pixel_Difference_Net) and [ESPNet](https://github.com/irfanICMLL/structure_knowledge_distillation)
+Some of the codes are borrowed from [RTFNet](https://github.com/yuxiangsun/RTFNet)
 
 Contact: yx.sun@polyu.edu.hk
 
