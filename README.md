@@ -112,11 +112,5 @@ If you use InconSeg in your academic work, please cite:
   doi={10.1109/LRA.2023.3272517}}
 ```
 
-
 # Acknowledgement
-Some of the codes are borrowed from [RTFNet](https://github.com/yuxiangsun/RTFNet)
-
-Contact: yx.sun@polyu.edu.hk
-
-Website: https://yuxiangsun.github.io/
-
+Some of the codes are borrowed from [RTFNet](https://github.com/yuxiangsun/RTFNet) 
