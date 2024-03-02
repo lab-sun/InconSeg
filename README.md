@@ -90,7 +90,7 @@ $ python3 trainInconSeg_with_RGB_Disparity.py
 * To see the training process
 ```
 $ (fire up another terminal)
-$ docker exec -it docker_container_cekd /bin/bash
+$ docker exec -it docker_container_inconseg /bin/bash
 $ cd /workspace
 $ tensorboard --bind_all --logdir=./runs/tensorboard_log/
 $ (fire up your favorite browser with http://localhost:1234, you will see the tensorboard)
