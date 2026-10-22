@@ -49,7 +49,7 @@ def compute_results(conf_total):
             iou_per_class[cid] = np.nan
         else:
             iou_per_class[cid] = float(conf_total[cid, cid]) / float((conf_total[cid, start_index:].sum() + conf_total[start_index:, cid].sum() - conf_total[cid, cid])) # IoU = TP/TP+FP+FN
-        if (recall_per_class[cid] == np.nan) | (precision_per_class[cid] == np.nan) |(precision_per_class[cid]==0)|(recall_per_class[cid]==0):
+        if np.isnan(recall_per_class[cid]) | np.isnan(precision_per_class[cid]) |(precision_per_class[cid]==0)|(recall_per_class[cid]==0):
             F1_per_class[cid] = np.nan
         else :
             F1_per_class[cid] = 2 / (1/precision_per_class[cid] +1/recall_per_class[cid])

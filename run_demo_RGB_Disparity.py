@@ -3,7 +3,6 @@
 
 import os, argparse, time, datetime, sys, shutil, stat, torch
 import numpy as np 
-from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from util.RGB_Disparity_dataset import RGB_Disparity_dataset 
 from util.util import compute_results, visualize
@@ -31,18 +30,21 @@ args = parser.parse_args()
 #############################################################################################
 
 if __name__ == '__main__':
-  
-    torch.cuda.set_device(args.gpu)
+
+    device = torch.device('cuda:%d' % args.gpu) if args.gpu >= 0 else torch.device('cpu')
+    if args.gpu >= 0:
+        torch.cuda.set_device(args.gpu)
     print("\nthe pytorch version:", torch.__version__)
-    print("the gpu count:", torch.cuda.device_count())
-    print("the current used gpu:", torch.cuda.current_device(), '\n')
+    if args.gpu >= 0:
+        print("the gpu count:", torch.cuda.device_count())
+        print("the current used gpu:", torch.cuda.current_device(), '\n')
 
     # prepare save direcotry
     if os.path.exists("./runs"):
         print("previous \"./runs\" folder exist, will delete this folder")
         shutil.rmtree("./runs")
     os.makedirs("./runs")
-    os.chmod("./runs", stat.S_IRWXO)  # allow the folder created by docker read, written, and execuated by local machine
+    os.chmod("./runs", os.stat("./runs").st_mode | stat.S_IRWXO)  # allow the folder created by docker read, written, and execuated by local machine
     model_dir = os.path.join(args.model_dir, args.weight_name)
     if os.path.exists(model_dir) is False:
         sys.exit("the %s does not exit." %(model_dir))
@@ -51,13 +53,13 @@ if __name__ == '__main__':
         print('use the final model file.')
     else:
         sys.exit('no model file found.') 
-    print('testing %s: %s on GPU #%d with pytorch' % (args.model_name, args.weight_name, args.gpu))
+    print('testing %s: %s on %s with pytorch' % (args.model_name, args.weight_name, device))
     
     conf_total = np.zeros((args.n_class, args.n_class))
     model = eval(args.model_name)(n_class=args.n_class)
-    if args.gpu >= 0: model.cuda(args.gpu)
+    model.to(device)
     print('loading model file %s... ' % model_file)
-    pretrained_weight = torch.load(model_file, map_location = lambda storage, loc: storage.cuda(args.gpu))
+    pretrained_weight = torch.load(model_file, map_location=device, weights_only=True)
     own_state = model.state_dict()
     for name, param in pretrained_weight.items():
         own_state[name].copy_(param)  
@@ -70,7 +72,7 @@ if __name__ == '__main__':
         batch_size  = batch_size,
         shuffle     = False,
         num_workers = args.num_workers,
-        pin_memory  = True,
+        pin_memory  = args.gpu >= 0,
         drop_last   = False
     )
     ave_time_cost = 0.0
@@ -78,12 +80,12 @@ if __name__ == '__main__':
     model.eval()
     with torch.no_grad():
         for it, (images, labels, names) in enumerate(test_loader):
-            images = Variable(images).cuda(args.gpu)
-            labels = Variable(labels).cuda(args.gpu)
-            torch.cuda.synchronize()
+            images = images.to(device)
+            labels = labels.to(device)
+            if args.gpu >= 0: torch.cuda.synchronize()
             start_time = time.time()
             depth_result, rgb_result,rgb_seg_f1,depth_add_f1,rgb_seg_f2,depth_add_f2,rgb_seg_f3,depth_add_f3 = model(images)  
-            torch.cuda.synchronize()
+            if args.gpu >= 0: torch.cuda.synchronize()
             end_time = time.time()
             logits = rgb_result
             if it>=5: # # ignore the first 5 frames
@@ -104,7 +106,11 @@ if __name__ == '__main__':
     savemat(conf_total_matfile,  {'conf': conf_total}) # 'conf' is the variable name when loaded in Matlab
  
     print('\n###########################################################################')
-    print('\n%s: %s test results (with batch size %d) on %s using %s:' %(args.model_name, args.weight_name, batch_size, datetime.date.today(), torch.cuda.get_device_name(args.gpu))) 
+    if args.gpu >= 0:
+        device_name = torch.cuda.get_device_name(args.gpu)
+    else:
+        device_name = 'cpu'
+    print('\n%s: %s test results (with batch size %d) on %s using %s:' %(args.model_name, args.weight_name, batch_size, datetime.date.today(), device_name)) 
     print('\n* the tested dataset name: %s' % args.dataset_split)
     print('* the tested image count: %d' % len(test_loader))
     print('* the tested image size: %d*%d' %(args.img_height, args.img_width)) 
@@ -121,7 +127,11 @@ if __name__ == '__main__':
           %(recall_per_class[1:].mean(), F1_per_class[1:].mean(), iou_per_class[1:].mean()))
     print("* average values (np.mean(np.nan_to_num(x))): \n recall: %.6f, F1: %.6f, iou: %.6f" \
           %(np.mean(np.nan_to_num(recall_per_class[1:])), np.mean(np.nan_to_num(F1_per_class[1:])), np.mean(np.nan_to_num(iou_per_class[1:]))))
-    print('\n* the average time cost per frame (with batch size %d): %.2f ms, namely, the inference speed is %.2f fps' %(batch_size, ave_time_cost*1000/(len(test_loader)-5), 1.0/(ave_time_cost/(len(test_loader)-5)))) # ignore the first 10 frames
+    timed_frames = len(test_loader) - 5  # ignore the first 5 frames
+    if timed_frames > 0 and ave_time_cost > 0:
+        print('\n* the average time cost per frame (with batch size %d): %.2f ms, namely, the inference speed is %.2f fps' %(batch_size, ave_time_cost*1000/timed_frames, 1.0/(ave_time_cost/timed_frames))) # ignore the first 10 frames
+    else:
+        print('\n* the average time cost per frame (with batch size %d): n/a' % batch_size)
     #print('\n* the total confusion matrix: ') 
     #np.set_printoptions(precision=8, threshold=np.inf, linewidth=np.inf, suppress=True)
     #print(conf_total)

@@ -6,11 +6,11 @@ import torchvision.models as models
 
 class InconSeg(nn.Module):
 
-    def __init__(self, n_class):
+    def __init__(self, n_class, pretrained=True):
         super(InconSeg, self).__init__()
 
-        resnet_raw_model1 = models.resnet152(pretrained=True)
-        resnet_raw_model2 = models.resnet152(pretrained=True)
+        resnet_raw_model1 = models.resnet152(weights=models.ResNet152_Weights.IMAGENET1K_V1 if pretrained else None)
+        resnet_raw_model2 = models.resnet152(weights=models.ResNet152_Weights.IMAGENET1K_V1 if pretrained else None)
         self.inplanes = 2048
 
         ########  Thermal ENCODER  ########
@@ -376,11 +376,12 @@ class FusionV1(nn.Module):
 def unit_test():
 
     num_minibatch = 2
-    rgb = torch.randn(num_minibatch, 3, 480, 640).cuda(0)
-    thermal = torch.randn(num_minibatch, 1, 480, 640).cuda(0)
-    rtf_net = InconSeg(9).cuda(0)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    rgb = torch.randn(num_minibatch, 3, 480, 640).to(device)
+    thermal = torch.randn(num_minibatch, 1, 480, 640).to(device)
+    rtf_net = InconSeg(3, pretrained=False).to(device)
     input = torch.cat((rgb, thermal), dim=1)
-    A ,B,c,d = rtf_net(input)
+    depth_decoder_out_1, rgb_decoder_out_1,rgb_seg_f1,depth_add_f1,rgb_seg_f2,depth_add_f2,rgb_seg_f3,depth_add_f3 = rtf_net(input)
     #print('The model: ', rtf_net.modules)
 
 if __name__ == '__main__':

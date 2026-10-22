@@ -1,0 +1,7 @@
+torch>=1.13
+torchvision>=0.13
+numpy
+scipy
+scikit-learn
+Pillow
+tensorboard
