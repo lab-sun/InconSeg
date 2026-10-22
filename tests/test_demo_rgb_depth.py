@@ -7,7 +7,7 @@ import sys
 import numpy as np
 import PIL.Image
 import torch
-import torchvision.models as models
+from torchvision import models
 
 from model.InconSeg import InconSeg
 
@@ -23,14 +23,14 @@ def _write_synthetic_dataset(data_dir):
     rng = np.random.default_rng(0)
     for index, name in enumerate(NAMES):
         rgb = rng.integers(0, 256, size=(288, 512, 3), dtype=np.uint8)
-        PIL.Image.fromarray(rgb, mode='RGB').save(data_dir / 'left' / ('left%s.png' % name))
+        PIL.Image.fromarray(rgb, mode='RGB').save(data_dir / 'left' / f'left{name}.png')
         label = np.zeros((288, 512), dtype=np.uint8)
         label[:, 170:340] = 1
         label[:, 340:] = 2
         label[index * 30:(index + 1) * 30, :] = index % 3
-        PIL.Image.fromarray(label, mode='L').save(data_dir / 'labels' / ('label%s.png' % name))
+        PIL.Image.fromarray(label, mode='L').save(data_dir / 'labels' / f'label{name}.png')
         depth = rng.integers(0, 256, size=(288, 512), dtype=np.uint8)
-        PIL.Image.fromarray(depth, mode='L').save(data_dir / 'depth' / ('depth%s.png' % name))
+        PIL.Image.fromarray(depth, mode='L').save(data_dir / 'depth' / f'depth{name}.png')
 
 
 def test_run_demo_rgb_depth_cpu(tmp_path, monkeypatch, capsys):
@@ -79,16 +79,16 @@ def test_run_demo_rgb_depth_cpu(tmp_path, monkeypatch, capsys):
     runpy.run_path(os.path.join(ROOT, 'run_demo_RGB_Depth.py'), run_name='__main__')
 
     captured = capsys.readouterr()
-    assert 'testing InconSeg: %s on cpu with pytorch' % WEIGHT_NAME in captured.out
+    assert f'testing InconSeg: {WEIGHT_NAME} on cpu with pytorch' in captured.out
 
     runs = work / 'runs'
     runs_mode = os.stat(runs).st_mode
     assert runs_mode & stat.S_IRWXU
     assert runs_mode & stat.S_IRWXO == stat.S_IRWXO
     for name in NAMES:
-        prediction = runs / ('Pred_%s_%s.png' % (WEIGHT_NAME, name))
+        prediction = runs / f'Pred_{WEIGHT_NAME}_{name}.png'
         assert prediction.is_file()
         assert prediction.stat().st_size > 0
-    conf = runs / ('conf_%s.mat' % WEIGHT_NAME)
+    conf = runs / f'conf_{WEIGHT_NAME}.mat'
     assert conf.is_file()
     assert conf.stat().st_size > 0

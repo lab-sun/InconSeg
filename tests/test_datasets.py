@@ -15,16 +15,16 @@ def _write_split(root, folder, head):
     for name, zero in (('0001', True), ('0002', False)):
         rgb = np.zeros((30, 40, 3), dtype=np.uint8)
         rgb[:] = (12, 34, 56)
-        PIL.Image.fromarray(rgb).save(root / 'left' / ('left%s.png' % name))
+        PIL.Image.fromarray(rgb).save(root / 'left' / f'left{name}.png')
         label = np.zeros((30, 40), dtype=np.uint8)
         label[5:15, 5:15] = 1
         label[15:25, 15:25] = 2
-        PIL.Image.fromarray(label).save(root / 'labels' / ('label%s.png' % name))
+        PIL.Image.fromarray(label).save(root / 'labels' / f'label{name}.png')
         depth = np.zeros((30, 40), dtype=np.uint8)
         if not zero:
             depth[:, :] = 40
             depth[8:20, 10:28] = 180
-        PIL.Image.fromarray(depth).save(root / folder / ('%s%s.png' % (head, name)))
+        PIL.Image.fromarray(depth).save(root / folder / f'{head}{name}.png')
     return names
 
 

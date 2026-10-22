@@ -18,6 +18,7 @@ SCRIPTS = [
 def test_script_help(script):
     proc = subprocess.run(
         [sys.executable, os.path.join(ROOT, script), '--help'],
+        check=False,
         cwd=ROOT,
         capture_output=True,
         text=True,
