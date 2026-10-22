@@ -55,3 +55,52 @@ def test_dataset_reads_pngs_and_zero_map(tmp_path, dataset_cls, folder, head):
     assert image1[3].max().item() == pytest.approx(1.0)
     assert image1[:3].min() >= 0 and image1[:3].max() <= 1
     assert label1.dtype == torch.int64
+
+
+def _write_flat_rgb(root, folder, head, pixels, height, width):
+    for sub in ('left', 'labels', folder):
+        (root / sub).mkdir(parents=True)
+    names = [f'{pixel:04d}' for pixel in pixels]
+    (root / 'train.txt').write_text('\n'.join(names) + '\n')
+    label = np.zeros((height, width), dtype=np.uint8)
+    depth = np.zeros((height, width), dtype=np.uint8)
+    for name, pixel in zip(names, pixels):
+        rgb = np.full((height, width, 3), pixel, dtype=np.uint8)
+        PIL.Image.fromarray(rgb).save(root / 'left' / f'left{name}.png')
+        PIL.Image.fromarray(label).save(root / 'labels' / f'label{name}.png')
+        PIL.Image.fromarray(depth).save(root / folder / f'{head}{name}.png')
+    return names
+
+
+@pytest.mark.parametrize('dataset_cls,folder,head', [
+    (RGB_Depth_dataset, 'depth', 'depth'),
+    (RGB_Disparity_dataset, 'disparity', 'disparity'),
+])
+def test_rgb_pixels_scale_by_255(tmp_path, dataset_cls, folder, head):
+    root = tmp_path / 'data'
+    height, width = 4, 6
+    names = _write_flat_rgb(root, folder, head, (255, 0, 51), height, width)
+    dataset = dataset_cls(str(root), 'train', input_h=height, input_w=width)
+
+    scaled = {}
+    for index, name in enumerate(names):
+        image, _, got_name = dataset[index]
+        assert got_name == name
+        scaled[name] = image[:3]
+
+    assert torch.equal(scaled['0255'], torch.ones_like(scaled['0255']))
+    assert torch.equal(scaled['0000'], torch.zeros_like(scaled['0000']))
+    assert scaled['0051'].numpy() == pytest.approx(0.2, abs=1e-6)
+
+
+@pytest.mark.parametrize('dataset_cls,folder,head', [
+    (RGB_Depth_dataset, 'depth', 'depth'),
+    (RGB_Disparity_dataset, 'disparity', 'disparity'),
+])
+def test_default_input_size(tmp_path, dataset_cls, folder, head):
+    root = tmp_path / 'data'
+    _write_flat_rgb(root, folder, head, (0,), 2, 2)
+    dataset = dataset_cls(str(root), 'train')
+    image, label, _ = dataset[0]
+    assert tuple(image.shape) == (4, 288, 512)
+    assert tuple(label.shape) == (288, 512)
