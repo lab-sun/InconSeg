@@ -1,10 +1,11 @@
 import torch.nn.functional as F
 
+
 def fusion_loss(rgb_seg_1,depth_add,label):
 
-    feature_map_B, feature_map_C, feature_map_W, feature_map_H = rgb_seg_1.size()
-    label_B, label_W, label_H = label.size()
-    if feature_map_W != label_W:
+    _feature_map_B, _feature_map_C, feature_map_W, feature_map_H = rgb_seg_1.size()
+    _label_B, label_W, label_H = label.size()
+    if feature_map_W != label_W or feature_map_H != label_H:
         label = label.unsqueeze(1).float()
         label = F.interpolate(label,[feature_map_W,feature_map_H],mode="nearest")
         label = label.squeeze(1).long()
