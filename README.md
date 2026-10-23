@@ -98,6 +98,16 @@ $ (fire up your favorite browser with http://localhost:1234, you will see the te
 The results will be saved in the `./runs` folder.
 Note: Please change the smoothing factor in the Tensorboard webpage to `0.999`, otherwise, you may not find the patterns from the noisy plots. If you have the error `docker: Error response from daemon: could not select device driver`, please first install [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) on your computer!
 
+# Tests
+Install the CPU build of PyTorch, then the rest of the dependencies, and run pytest from the repository root. Pass `--gpu -1` to the demo and training scripts to run on CPU.
+
+```
+$ pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+$ pip install -r requirements.txt
+$ pip install pytest
+$ python -m pytest -q
+```
+
 # Citation
 If you use InconSeg in your academic work, please cite:
 ```

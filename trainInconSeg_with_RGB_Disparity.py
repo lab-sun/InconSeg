@@ -5,12 +5,12 @@ import os, argparse, time, datetime, stat, shutil
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.autograd import Variable
 from torch.utils.data import DataLoader
 import torchvision.utils as vutils
 from util.RGB_Disparity_dataset import RGB_Disparity_dataset
 from util.augmentation import RandomFlip, RandomCrop, RandomCropOut, RandomBrightness, RandomNoise
 from util.util import compute_results
+from util.loss import fusion_loss
 from sklearn.metrics import confusion_matrix
 from torch.utils.tensorboard import SummaryWriter
 
@@ -33,6 +33,8 @@ parser.add_argument('--n_class', '-nc', type=int, default=3)
 parser.add_argument('--data_dir', '-dr', type=str, default='./dataset/')
 args = parser.parse_args()
 #############################################################################################
+device = torch.device('cuda:%d' % args.gpu) if args.gpu >= 0 else torch.device('cpu')
+#############################################################################################
 
 augmentation_methods = [
     RandomFlip(prob=0.5),
@@ -43,32 +45,11 @@ augmentation_methods = [
 ]
 
 
-def fusion_loss(rgb_seg_1,depth_add,label):
-
-    feature_map_B, feature_map_C, feature_map_W, feature_map_H = rgb_seg_1.size()
-    label_B, label_W, label_H = label.size()
-    if feature_map_W != label_W:
-        label = torch.cuda.FloatTensor(label.unsqueeze(1).cpu().numpy())
-        label = F.interpolate(label,[feature_map_W,feature_map_H],mode="nearest")
-        label = torch.cuda.LongTensor(label.squeeze(1).cpu().numpy())
-    loss_pr_seg = F.cross_entropy(rgb_seg_1, label)
-    rgb_seg_1 = rgb_seg_1.detach()
-    rgb_seg_1=rgb_seg_1.argmax(1)
-    rgb_seg_1.eq_(label)
-    rgb_seg_1=rgb_seg_1.clone().detach_().requires_grad_(False)
-    add_map = (1-rgb_seg_1)*label
-    add_map=add_map.clone().detach_().requires_grad_(False)
-
-    loss_add = F.cross_entropy(depth_add,add_map)
-
-    return loss_pr_seg,loss_add,add_map
-
-
 def train(epo, model, train_loader, optimizer):
     model.train()
     for it, (images, labels, names) in enumerate(train_loader):
-        images = Variable(images).cuda(args.gpu)
-        labels = Variable(labels).cuda(args.gpu)
+        images = images.to(device)
+        labels = labels.to(device)
         start_t = time.time() # time.time() returns the current time
         optimizer.zero_grad()
         depth_result, rgb_result,rgb_seg_f1,depth_add_f1,rgb_seg_f2,depth_add_f2,rgb_seg_f3,depth_add_f3 = model(images)   # depth image result, rgb image result, rgb image pre-segmentaion,  complement feature
@@ -183,8 +164,8 @@ def validation(epo, model, val_loader):
     model.eval()
     with torch.no_grad():
         for it, (images, labels, names) in enumerate(val_loader):
-            images = Variable(images).cuda(args.gpu)
-            labels = Variable(labels).cuda(args.gpu)
+            images = images.to(device)
+            labels = labels.to(device)
             start_t = time.time() # time.time() returns the current time
             
             depth_result, rgb_result,rgb_seg_f1,depth_add_f1,rgb_seg_f2,depth_add_f2,rgb_seg_f3,depth_add_f3 = model(images)   # depth image result, rgb image result, rgb image pre-segmentaion,  complement feature
@@ -220,8 +201,8 @@ def testing(epo, model, test_loader):
     testing_results_file = os.path.join(weight_dir, 'testing_results_file.txt')
     with torch.no_grad():
         for it, (images, labels, names) in enumerate(test_loader):
-            images = Variable(images).cuda(args.gpu)
-            labels = Variable(labels).cuda(args.gpu)
+            images = images.to(device)
+            labels = labels.to(device)
             depth_result, rgb_result,rgb_seg_f1,depth_add_f1,rgb_seg_f2,depth_add_f2,rgb_seg_f3,depth_add_f3 = model(images)   # depth image result, rgb image result, rgb image pre-segmentaion,  complement feature
             logits = rgb_result 
             label = labels.cpu().numpy().squeeze().flatten()
@@ -254,15 +235,17 @@ def testing(epo, model, test_loader):
         writer.add_text('testing_results', file.read().replace('\n', '  \n'), epo)
 
 if __name__ == '__main__':
-   
-    torch.cuda.set_device(args.gpu)
+
+    if args.gpu >= 0:
+        torch.cuda.set_device(args.gpu)
     print("\nthe pytorch version:", torch.__version__)
-    print("the gpu count:", torch.cuda.device_count())
-    print("the current used gpu:", torch.cuda.current_device(), '\n')
+    if args.gpu >= 0:
+        print("the gpu count:", torch.cuda.device_count())
+        print("the current used gpu:", torch.cuda.current_device(), '\n')
 
     model = eval(args.model_name)(n_class=args.n_class)
 
-    if args.gpu >= 0: model.cuda(args.gpu)
+    model.to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr_start, momentum=0.9, weight_decay=0.0005)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.lr_decay, last_epoch=-1)
 
@@ -271,13 +254,13 @@ if __name__ == '__main__':
         shutil.rmtree("./runs")
     weight_dir = os.path.join("./runs", args.model_name)
     os.makedirs(weight_dir)
-    os.chmod(weight_dir, stat.S_IRWXO)  # allow the folder created by docker read, written, and execuated by local machine
+    os.chmod(weight_dir, os.stat(weight_dir).st_mode | stat.S_IRWXO)  # allow the folder created by docker read, written, and execuated by local machine
  
     writer = SummaryWriter("./runs/tensorboard_log")
-    os.chmod("./runs/tensorboard_log", stat.S_IRWXO)  # allow the folder created by docker read, written, and execuated by local machine
-    os.chmod("./runs", stat.S_IRWXO) 
+    os.chmod("./runs/tensorboard_log", os.stat("./runs/tensorboard_log").st_mode | stat.S_IRWXO)  # allow the folder created by docker read, written, and execuated by local machine
+    os.chmod("./runs", os.stat("./runs").st_mode | stat.S_IRWXO) 
 
-    print('training %s on GPU #%d with pytorch' % (args.model_name, args.gpu))
+    print('training %s on %s with pytorch' % (args.model_name, device))
     print('from epoch %d / %s' % (args.epoch_from, args.epoch_max))
     print('weight will be saved in: %s' % weight_dir)
 
@@ -290,7 +273,7 @@ if __name__ == '__main__':
         batch_size  = args.batch_size,
         shuffle     = True,
         num_workers = args.num_workers,
-        pin_memory  = True,
+        pin_memory  = args.gpu >= 0,
         drop_last   = True
     )
     val_loader  = DataLoader(
@@ -298,7 +281,7 @@ if __name__ == '__main__':
         batch_size  = args.batch_size,
         shuffle     = False,
         num_workers = args.num_workers,
-        pin_memory  = True,
+        pin_memory  = args.gpu >= 0,
         drop_last   = True
     )
     test_loader = DataLoader(
@@ -306,7 +289,7 @@ if __name__ == '__main__':
         batch_size   = args.batch_size,
         shuffle      = False,
         num_workers  = args.num_workers,
-        pin_memory   = True,
+        pin_memory   = args.gpu >= 0,
         drop_last    = True
     )
     start_datetime = datetime.datetime.now().replace(microsecond=0)

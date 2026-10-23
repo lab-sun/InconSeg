@@ -37,7 +37,8 @@ class RGB_Disparity_dataset(Dataset):
         depth = np.asarray(PIL.Image.fromarray(depth).resize((self.input_w, self.input_h)))
         depth = depth.astype('float32')
         M = depth.max()
-        depth = depth/M
+        if M > 0:
+            depth = depth/M
         label = np.asarray(PIL.Image.fromarray(label).resize((self.input_w, self.input_h), resample=PIL.Image.NEAREST))
         label = label.astype('int64')
 
